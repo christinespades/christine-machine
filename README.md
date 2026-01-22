@@ -47,3 +47,11 @@ It is designed as a fast, first-stage processing step to save time before moving
 * Graphic designers
 * Motion designers preparing assets
 * Anyone needing fast, repeatable image transformations without manual editing
+
+🔒 License & Usage
+Copyright © 2025-2026 Christineee. All rights reserved.
+
+This repository is proprietary software.
+Unauthorized copying, modification, redistribution, hosting, or commercial use is strictly prohibited.
+
+No license is granted except by explicit written permission from the author.
