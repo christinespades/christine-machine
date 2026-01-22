@@ -1,5 +1,5 @@
 # christine-machine
-> WIP.
+> WIP. Windows and CPU only.
 ## Overview
 This project is a modular image-processing machine with a minimal black GUI, built for visual artists and graphic designers who want to quickly generate original or heavily effected images. It is intended for rapid experimentation and batch processing, producing assets that can later be refined in tools like Photoshop or DaVinci Resolve.
 
