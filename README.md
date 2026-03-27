@@ -1,5 +1,5 @@
 # christine-machine
-> WIP. Windows and CPU only. This is a hobby project, a machine/engine for multimedia, to handle a bunch of formats, processing tasks, conversions, etc.
+> Very WIP. Windows only.
 
 ## Overview
 This project is a modular image-processing machine with a minimal black GUI, built for visual artists, musicians, programmers, superusers, graphic designers, and more. It has several modules:
