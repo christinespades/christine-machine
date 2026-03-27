@@ -1,6 +1,3 @@
-# This module is for everything video. mp4, mov, avi, etc.. decode, encode, upscale, compress, etc..
-
-# below is just some ffmpeg, mp4 compressor
 import os
 import sys
 import subprocess

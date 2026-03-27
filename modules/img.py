@@ -1,6 +1,3 @@
-# This module is for image generation, batch processing, editing, compositing, upscaling, etc.
-# Parts of this needs to be lifted out and made into a gui.py module
-
 import threading, torch, cv2, os, io, time
 from datetime import datetime
 import numpy as np
