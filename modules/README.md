@@ -1,12 +1,9 @@
-these modules will be refactored and have their own subdirectories eventually
-
-# Audio Modules
-id like to have a standalone DAW one day
-with a clean, minimal and logical workflow.
-parameter modulation based on signal conditions (often called envelope followers, sidechains, or conditional modulation).
-in a literal “if X > Y then do Z” logic form
-dunno why all daws make this such a pain
-should just be able to right click a track, drop down and click to bind stuff, not having to sit and draw LFOs and envelopes etc
+# Context Menu Tip
+Each script has a corresponding .bat file.
+This makes it easier to quickly process files via the OS context menu.
+Press Win + R → type shell:sendto
+Create shortcuts to the .bat.
+Right-click file → Send to → choose the .bat.
 
 ## aud_fx.py ABOUT
 effect processing
@@ -39,6 +36,11 @@ image generation, batch processing, editing, compositing, upscaling, etc.
 
 ## img.py TODO
 parts of this needs to be lifted out and moved into the gui.py module
+
+## img_comp.py ABOUT
+simple image compression and resizing.
+
+## img_comp.py TODO
 
 ## vid.py ABOUT
 for everything video processing. mp4, mov, avi, etc.. decode, encode, upscale, compress, etc..
