@@ -147,100 +147,136 @@ uniform float fractal_mult;
 uniform float scan_mult;
 uniform float vignette_mult;
 uniform float chromatic_mult;
-
 out vec4 fragColor;
 
-float hash(vec2 p) {
-    p = fract(p * vec2(0.3183099, 0.3678794));
-    p = p * p * (3.0 - 2.0 * p);
-    return fract(p.x * p.y * (p.x + p.y));
+// ------------------- Hash / Random -------------------
+float hash(vec2 p){
+    p = fract(p * vec2(0.3183099,0.3678794));
+    p = p*p*(3.0-2.0*p);
+    return fract(p.x*p.y*(p.x+p.y));
 }
 
-float fbm(vec2 p) {
-    float value = 0.0;
-    float amplitude = 0.5;
-    for (int i = 0; i < 6; i++) {
-        value += amplitude * hash(p);
-        p *= 2.02;
-        amplitude *= 0.5;
+float hash1(float x) {
+    return fract(sin(x*12.9898)*43758.5453);
+}
+
+// ------------------- Noise / FBM -------------------
+float fbm(vec2 p){
+    float v=0.0, a=0.5;
+    for(int i=0;i<6;i++){
+        v += a*hash(p);
+        p *= 2.02 + hash(p*1.3);
+        a *= 0.5;
     }
-    return value;
+    return v;
 }
 
-float sdCircle(vec2 p, vec2 center, float r) {
-    return length(p - center) - r;
+// ------------------- Voronoi / Cellular -------------------
+float voronoi(vec2 x){
+    vec2 p = floor(x);
+    vec2 f = fract(x);
+    float res = 8.0;
+    for(int j=-1;j<=1;j++)
+        for(int i=-1;i<=1;i++){
+            vec2 b = vec2(float(i),float(j));
+            vec2 r = b + hash(p+b) - f;
+            res = min(res, length(r));
+        }
+    return res;
 }
 
-void main() {
-    vec2 p = (gl_FragCoord.xy - resolution.xy * 0.5) / resolution.y;
+// ------------------- Shape SDFs -------------------
+float sdCircle(vec2 p, vec2 c, float r){
+    return length(p-c)-r;
+}
 
-    float t = time * 0.85;
-    float b = bass * 1.8;
-    float tr = treble * 1.5;
-    float on = onset * 2.5;
+// ------------------- Layers -------------------
+vec3 cloudsLayer(vec2 uv, float t, float mult){
+    vec2 puv = uv*3.5 + vec2(t*0.12, t*0.09)*mult;
+    float c = fbm(puv*1.8)*mult;
+    return mix(vec3(0.07,0.03,0.11), vec3(0.45,0.12,0.65), c);
+}
 
-    // Deep gothic base
-    vec3 col = vec3(0.07, 0.03, 0.11);
-
-    // Clouds
-    vec2 cloud_uv = p * 3.5 + vec2(t * 0.12, t * 0.09) * cloud_mult;
-    float clouds = fbm(cloud_uv * 1.8) * cloud_mult;
-    col = mix(col, vec3(0.45, 0.12, 0.65), clouds * tr * 0.85);
-    col = mix(col, vec3(0.85, 0.25, 0.95), clouds * b * 0.45);
-
-    vec2 center = vec2(0.0, 0.0);
-
-    // Fractal web
-    float angle = t * 0.65 + on * 0.9;
+vec3 fractalLayer(vec2 uv, float t, float b, float mult){
+    float angle = t*0.65 + b*0.9;
     float web = 0.0;
     float scale = 1.0;
-    for (int i = 0; i < 7; i++) {
-        vec2 q = p * scale;
-        float a = atan(q.y, q.x) + angle * (1.0 + float(i) * 0.32) * fractal_mult;
-        q = vec2(cos(a), sin(a)) * length(q);
-        web += 0.16 / (abs(length(q) - 0.38 - b * 0.45) + 0.025);
+    for(int i=0;i<7;i++){
+        vec2 q = uv*scale;
+        float a = atan(q.y,q.x)+angle*(1.0+float(i)*0.32)*mult;
+        q = vec2(cos(a), sin(a))*length(q);
+        web += 0.16 / (abs(length(q)-0.38-b*0.45)+0.025);
         scale *= 0.64;
         angle += 0.85;
     }
-    col = mix(col, vec3(0.95, 0.45, 1.0), web * line_mult * 0.75);
+    return vec3(web*0.95, web*0.45, web*1.0);
+}
 
-    // Rotating geometric lines
+vec3 geometricLayer(vec2 uv, float t, float b, float mult){
+    vec2 c = vec2(0.0);
     float lines = 0.0;
-    for (int i = 0; i < 14; i++) {
-        float a = float(i) * 3.14159 * 2.0 / 14.0 + t * 0.95 * line_mult;
+    for(int i=0;i<14;i++){
+        float a = float(i)*6.283185/14.0 + t*0.95*mult;
         vec2 dir = vec2(cos(a), sin(a));
-        float d = abs(dot(p - center, vec2(-dir.y, dir.x)));
-        lines += 0.009 / (d + 0.018);
+        float d = abs(dot(uv-c, vec2(-dir.y,dir.x)));
+        lines += 0.009/(d+0.018);
     }
-    col = mix(col, vec3(0.65, 0.95, 1.0), lines * (1.0 + b * 1.3));
+    return vec3(0.65,0.95,1.0)*lines*(1.0+b*1.3);
+}
 
-    // Stereo orbs
-    float orbL = sdCircle(p, vec2(-0.45, 0.0), 0.13 + left * 0.28 + b * 0.12);
-    float orbR = sdCircle(p, vec2( 0.45, 0.0), 0.13 + right * 0.28 + b * 0.12);
-    col = mix(col, vec3(1.0, 0.45, 0.15), 1.0 - smoothstep(0.0, 0.035, orbL));
-    col = mix(col, vec3(0.15, 1.0, 0.55), 1.0 - smoothstep(0.0, 0.035, orbR));
+vec3 stereoOrbs(vec2 uv, float l, float r, float b){
+    float orbL = sdCircle(uv, vec2(-0.45,0.0), 0.13+l*0.28+b*0.12);
+    float orbR = sdCircle(uv, vec2(0.45,0.0), 0.13+r*0.28+b*0.12);
+    vec3 col = vec3(0.0);
+    col = mix(col, vec3(1.0,0.45,0.15), 1.0-smoothstep(0.0,0.035,orbL));
+    col = mix(col, vec3(0.15,1.0,0.55), 1.0-smoothstep(0.0,0.035,orbR));
+    return col;
+}
 
-    // Chromatic aberration on strong bass
-    if (b > 0.65) {
-        float ca = chromatic_mult * b * 0.018;
+// ------------------- Main -------------------
+void main(){
+    vec2 uv = (gl_FragCoord.xy-resolution.xy*0.5)/resolution.y;
+    float t = time*0.85;
+    float b = bass*1.8;
+    float tr = treble*1.5;
+    float on = onset*2.5;
+
+    // Seed-driven dynamic perturbation
+    float dynamicMult = hash1(float(int(time*1000.0))) * 2.0 - 1.0;
+    uv += normalize(uv)*dynamicMult*0.12;
+
+    vec3 col = cloudsLayer(uv, t, cloud_mult);
+    col += fractalLayer(uv, t, b, fractal_mult);
+    col += geometricLayer(uv, t, b, line_mult);
+    col += stereoOrbs(uv, left, right, b);
+
+    col *= 0.5 + 0.5*sin(on + uv.x*10.0);
+
+    // Voronoi warping on bass peaks
+    float vor = voronoi(uv*8.0 + b*3.0);
+    col = mix(col, vec3(0.95,0.85,1.0), vor*0.3);
+
+    // Chromatic aberration
+    if(b>0.65){
+        float ca = chromatic_mult*b*0.018;
         vec3 ca_col = col;
-        ca_col.r = mix(ca_col.r, col.g, ca * 0.6);
-        ca_col.b = mix(ca_col.b, col.r, ca * 0.7);
+        ca_col.r = mix(ca_col.r, col.g, ca*0.6);
+        ca_col.b = mix(ca_col.b, col.r, ca*0.7);
         col = ca_col;
     }
 
     // Scanlines
-    float scan = 0.85 + scan_mult * sin(gl_FragCoord.y * 4.0 + t * 25.0) * 0.18;
+    float scan = 0.85+scan_mult*sin(gl_FragCoord.y*4.0+t*25.0)*0.18;
     col *= scan;
 
     // Vignette
-    float vig = vignette_mult * (1.0 - length(p) * 0.85);
-    col *= vig * vig;
+    float vig = vignette_mult*(1.0-length(uv)*0.85);
+    col *= vig*vig;
 
     // Final glow
-    col += vec3(0.12, 0.06, 0.22) * (b + tr * 0.7);
+    col += vec3(0.12,0.06,0.22)*(b+tr*0.7);
 
-    fragColor = vec4(col, 1.0);
+    fragColor = vec4(col,1.0);
 }
 """
 
