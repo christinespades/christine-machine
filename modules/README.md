@@ -1,9 +1,10 @@
 # Context Menu Tip
-Each script has a corresponding .bat file.
+Some .py scripts have a corresponding .bat file.
 This makes it easier to quickly process files via the OS context menu.
 Press Win + R → type shell:sendto
 Create shortcuts to the .bat.
 Right-click file → Send to → choose the .bat.
+Other "scripts" just consist of a .bat file, in which case you can do the same with that directly.
 
 ## aud_fx.py ABOUT
 effect processing
